@@ -25,6 +25,15 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 {
   "fcitx5-rime-dbus.nvim",
   event = "InsertEnter",
+  -- Default options
+  -- enabled for enabling when enter nvim
+  -- After enabling smart_esc，hit Esc in normal and visual mode
+  -- will forcely set ASCII mode, and then exec event previously
+  -- binded to Esc.
+  -- opts = {
+  --   enabled = true,
+  --   smart_esc = true
+  -- }
 }
 ```
 
@@ -34,7 +43,17 @@ Using Neovim's built-in package manager(neovim version >= 0.12):
 vim.pack.add({
   { src = "https://github.com/Qiumix/fcitx5-rime-dbus.nvim") },
 })
+
+require('rime_dbus').setup({
+  -- enabled = true,
+  -- smart_esc = true
+})
 ```
+
+## command
+- RimeDbusEnable
+- RimeDbusDisablea
+- RimeDbusToggle
 
 ## Suggestions
 In `~/.config/fcitx5/conf/rime.conf`
