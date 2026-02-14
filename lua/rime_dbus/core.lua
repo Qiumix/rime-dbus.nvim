@@ -2,11 +2,11 @@ local M = {}
 local uv = vim.uv or vim.loop
 
 -- Internal state: true for ASCII mode, false for Chinese mode
-local rime_last_state = true
+local last_state_ascii = true
 
 --- Query current Rime ASCII state asynchronously
 --- @param callback fun(is_ascii: boolean)
-function M.get_rime_state(callback)
+function M.exec_by_rime_state(callback)
   local stdout = uv.new_pipe(false)
   local safe_callback = vim.schedule_wrap(callback)
   local output = ""
@@ -129,8 +129,8 @@ end
 
 --- Save state and force ASCII when leaving Insert mode
 function M.save_and_set_ascii()
-  M.get_rime_state(function(current_is_ascii)
-    rime_last_state = current_is_ascii
+  M.exec_by_rime_state(function(current_is_ascii)
+    last_state_ascii = current_is_ascii
     if not current_is_ascii then
       set_rime_state(true)
     end
@@ -139,16 +139,16 @@ end
 
 --- Restore state when entering Insert mode
 function M.restore_state()
-  M.get_rime_state(function(current_is_ascii)
-    if current_is_ascii ~= rime_last_state then
-      set_rime_state(rime_last_state)
+  M.exec_by_rime_state(function(current_is_ascii)
+    if current_is_ascii ~= last_state_ascii then
+      set_rime_state(last_state_ascii)
     end
   end)
 end
 
 function M.forcely_set_ascii()
-  rime_last_state = true
-  set_rime_state(rime_last_state)
+  last_state_ascii = true
+  set_rime_state(last_state_ascii)
 end
 
 return M

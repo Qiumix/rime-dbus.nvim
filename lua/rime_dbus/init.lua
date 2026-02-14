@@ -4,14 +4,13 @@ local api = vim.api
 local core = require("rime_dbus.core")
 
 -- Plugin enabled state
-local enabled = false
+local enabled = true
 local smart_esc = true
 local augroup_name = "RimeAutoMode"
 
 local function smart_esc_fun()
-  -- Run your force function first
-  core.get_rime_state(function(is_ascii)
-    if is_ascii then core.forcely_set_ascii() end
+  core.exec_by_rime_state(function(is_ascii)
+    if not is_ascii then core.forcely_set_ascii() end
   end)
 
   -- Return the actual Esc key to trigger original behavior
