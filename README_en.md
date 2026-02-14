@@ -1,4 +1,4 @@
-# rime-dbus.nvim
+# rime-toggle.nvim
 
 English | [简体中文](README.md)
 
@@ -23,7 +23,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  "fcitx5-rime-dbus.nvim",
+  "rime-toggle.nvim",
   event = "InsertEnter",
   -- Default options
   -- enabled for enabling when enter nvim
@@ -41,7 +41,7 @@ Using Neovim's built-in package manager(neovim version >= 0.12):
 
 ```lua
 vim.pack.add({
-  { src = "https://github.com/Qiumix/fcitx5-rime-dbus.nvim") },
+  { src = "https://github.com/Qiumix/rime-toggle.nvim") },
 })
 
 require('rime_dbus').setup({
@@ -51,9 +51,9 @@ require('rime_dbus').setup({
 ```
 
 ## command
-- RimeDbusEnable
-- RimeDbusDisablea
-- RimeDbusToggle
+- RimeEnable
+- RimeDisablea
+- RimeToggle
 
 ## Suggestions
 In `~/.config/fcitx5/conf/rime.conf`

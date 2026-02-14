@@ -1,7 +1,7 @@
 local M = {}
 local api = vim.api
 
-local core = require("rime_dbus.core")
+local core = require("rime_toggle.core")
 
 -- Plugin enabled state
 local enabled = true
@@ -20,7 +20,7 @@ end
 
 M.enable = function()
   if vim.fn.executable("busctl") == 0 then
-    vim.notify("Rime-DBus: busctl not found", vim.log.levels.ERROR)
+    vim.notify("Rime-Toggle: busctl not found", vim.log.levels.ERROR)
     return
   end
 

@@ -1,4 +1,4 @@
-# rime-dbus.nvim
+# rime-toggle.nvim
 
 [English](README_en.md) | 简体中文
 
@@ -23,7 +23,7 @@
 
 ```lua
 {
-  "fcitx5-rime-dbus.nvim",
+  "rime-toggle.nvim",
   event = "InsertEnter",
   -- 以下是默认值
   -- enabled表示默认启用
@@ -40,7 +40,7 @@
 
 ```lua
 vim.pack.add({
-  { src = "https://github.com/Qiumix/fcitx5-rime-dbus.nvim") },
+  { src = "https://github.com/Qiumix/rime-toggle.nvim") },
 })
 
 require('rime_dbus').setup({
@@ -50,9 +50,9 @@ require('rime_dbus').setup({
 ```
 
 ## 命令
-- RimeDbusEnable: 启用
-- RimeDbusDisablea: 禁用
-- RimeDbusToggle: 切换
+- RimeEnable: 启用
+- RimeDisablea: 禁用
+- RimeToggle: 切换
 
 ## 建议
 在配置文件 `~/.config/fcitx5/conf/rime.conf` 里添加下面这个选项
