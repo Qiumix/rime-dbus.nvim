@@ -66,7 +66,7 @@ local function get_rime_state(callback)
         stdout:close()
       end
       if spawn_handle and not spawn_handle:is_closing() then
-        spawn_handle:kill(15)  -- SIGTERM
+        spawn_handle:kill(15)    -- SIGTERM
       end
       invoke_callback_once(true) -- Fallback to ASCII mode on timeout
     end)
