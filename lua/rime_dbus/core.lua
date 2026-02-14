@@ -146,4 +146,9 @@ function M.restore_state()
   end)
 end
 
+function M.forcely_set_ascii()
+  rime_last_state = true
+  set_rime_state(rime_last_state)
+end
+
 return M
