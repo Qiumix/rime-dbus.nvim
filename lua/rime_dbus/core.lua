@@ -11,84 +11,107 @@ local function close(handle)
   end
 end
 
---- Query current Rime ASCII state asynchronously
---- @param callback fun(is_ascii: boolean)
-function M.exec_by_rime_state(callback)
-  local stdout = assert(uv.new_pipe())
-  local output = {}
-  local timer = nil
-  local handle = nil
+---@class RimeProc
+---@field handle? uv.uv_process_t
+---@field stdout uv.uv_pipe_t
+---@field timer? uv.uv_timer_t
+---@field output string[]
+---@field callback fun(output: string)
+---@field timeout number
+local Proc = {}
+Proc.__index = Proc
 
-  local function on_exit()
-    close(timer)
-    close(handle)
-    local check = assert(uv.new_check())
-    check:start(function()
-      if stdout and not stdout:is_closing() then
-        return
-      end
-      check:stop()
-      close(check)
-      close(stdout)
-      local result = table.concat(output)
-      local is_ascii = result:find("true") ~= nil
-      vim.schedule_wrap(callback)(is_ascii)
-    end)
-  end
+---@param args string[]
+---@param callback fun(output: string)
+---@param timeout? number
+---@return RimeProc
+function Proc.new(args, callback, timeout)
+  local self = setmetatable({}, Proc)
+  self.stdout = assert(uv.new_pipe())
+  self.output = {}
+  self.callback = callback
+  self.timeout = timeout or 500
 
-  -- separate opts as a single variable to disalbe lsp warning
+  self:run(args)
+  return self
+end
+
+function Proc:on_exit()
+  close(self.timer)
+  close(self.handle)
+
+  local check = assert(uv.new_check())
+  check:start(function()
+    if self.stdout and not self.stdout:is_closing() then
+      return
+    end
+    check:stop()
+    close(check)
+    close(self.stdout)
+
+    local result = table.concat(self.output)
+    vim.schedule_wrap(self.callback)(result)
+  end)
+end
+
+function Proc:run(args)
   local opts = {
-    args = { "--user", "call", "org.fcitx.Fcitx5", "/rime", "org.fcitx.Fcitx.Rime1", "IsAsciiMode" },
-    stdio = { nil, stdout, nil },
+    args = args,
+    stdio = { nil, self.stdout, nil },
     hide = true,
   }
-  handle = uv.spawn("busctl", opts, function(_, _)
-    on_exit()
+
+  self.handle = uv.spawn("busctl", opts, function(_, _)
+    self:on_exit()
   end)
 
-  if not handle then
-    close(stdout)
+  if not self.handle then
+    close(self.stdout)
     vim.notify("Rime-DBus: busctl spawn failed", vim.log.levels.WARN)
     return
   end
 
-  -- Timeout protection (500ms)
-  timer = assert(uv.new_timer())
-  timer:start(500, 0, function()
-    if handle and not handle:is_closing() then
-      handle:kill("sigterm")
+  -- Timeout protection
+  self.timer = assert(uv.new_timer())
+  self.timer:start(self.timeout, 0, function()
+    if self.handle and not self.handle:is_closing() then
+      self.handle:kill("sigterm")
     end
   end)
 
-  stdout:read_start(function(err, data)
+  self.stdout:read_start(function(err, data)
     assert(not err, err)
     if data then
-      table.insert(output, data)
+      table.insert(self.output, data)
     else
-      close(stdout)
+      close(self.stdout)
     end
   end)
+end
+
+--- Query current Rime ASCII state asynchronously
+--- @param callback fun(is_ascii: boolean)
+function M.exec_by_rime_state(callback)
+  Proc.new(
+    { "--user", "call", "org.fcitx.Fcitx5", "/rime", "org.fcitx.Fcitx.Rime1", "IsAsciiMode" },
+    function(output)
+      local is_ascii = output:find("true") ~= nil
+      callback(is_ascii)
+    end
+  )
 end
 
 --- Set Rime ASCII state asynchronously
 --- @param target_state boolean
 local function set_rime_state(target_state)
-  local opts = {
-    args = {
+  Proc.new(
+    {
       "--user", "call", "org.fcitx.Fcitx5", "/rime",
       "org.fcitx.Fcitx.Rime1", "SetAsciiMode", "b",
       target_state and "true" or "false"
     },
-    hide = true,
-  }
-
-  local handle = uv.spawn("busctl", opts, function()
-    close(handle)
-  end)
-
-  if not handle then
-    vim.notify("Rime-DBus: Failed to set state", vim.log.levels.WARN)
-  end
+    function(_) end -- No-op callback
+  )
 end
 
 --- Save state and force ASCII when leaving Insert mode
