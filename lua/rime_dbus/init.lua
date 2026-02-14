@@ -5,10 +5,18 @@ local core = require("rime_dbus.core")
 
 -- Plugin enabled state
 local enabled = false
+local smart_esc = true
 local augroup_name = "RimeAutoMode"
 
-M.setup = function(opts)
-  -- Reserved for future configuration
+M.forcely_set_ascii = core.forcely_set_ascii
+
+local function smart_esc_fun()
+  -- 1. Run your force function first
+  M.forcely_set_ascii()
+
+  -- 2. Return the actual Esc key to trigger original behavior
+  -- Use nvim_replace_termcodes to handle the key properly
+  return api.nvim_replace_termcodes("<Esc>", true, true, true)
 end
 
 M.open = function()
@@ -20,6 +28,12 @@ M.open = function()
   enabled = true
 
   local group = api.nvim_create_augroup(augroup_name, { clear = true })
+
+  vim.keymap.set({ "n", "v" }, "<Esc>", smart_esc_fun, {
+    silent = true,
+    expr = true,
+    desc = "Force Rime ASCII and then Esc"
+  })
 
   api.nvim_create_autocmd("InsertLeave", {
     group = group,
@@ -37,11 +51,22 @@ end
 M.close = function()
   enabled = false
   api.nvim_del_augroup_by_name(augroup_name)
+  pcall(vim.keymap.del({ "n", "v" }, "<Esc>"))
 end
 
 M.toggle = function()
   M[enabled and "close" or "open"]()
 end
 
-M.forcely_set_ascii = core.forcely_set_ascii
+
+M.setup = function(opts)
+  if opts then
+    enabled = opts.enabled and opts.enabled or enabled
+    smart_esc = opts.smart_esc and opts.smart_esc or smart_esc
+  end
+  if enabled then
+    M.open()
+  end
+end
+
 return M
