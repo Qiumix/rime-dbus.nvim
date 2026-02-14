@@ -1,5 +1,7 @@
 # fcitx5-rime-dbus.nvim
 
+[English](README.md) | 简体中文
+
 通过 D-Bus 在 Neovim 中自动切换 fcitx5 Rime 输入法的 ASCII 模式。
 
 ## 功能特性

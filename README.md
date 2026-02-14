@@ -1,5 +1,7 @@
 # fcitx5-rime-dbus.nvim
 
+English | [简体中文](README_zh.md)
+
 Auto toggle ASCII mode of Rime with fcitx5 in Neovim, through D-Bus.
 
 ## Features
