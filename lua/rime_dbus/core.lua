@@ -4,126 +4,90 @@ local uv = vim.uv or vim.loop
 -- Internal state: true for ASCII mode, false for Chinese mode
 local last_state_ascii = true
 
+---@param handle uv.uv_handle_t?
+local function close(handle)
+  if handle and not handle:is_closing() then
+    handle:close()
+  end
+end
+
 --- Query current Rime ASCII state asynchronously
 --- @param callback fun(is_ascii: boolean)
 function M.exec_by_rime_state(callback)
-  local stdout = uv.new_pipe(false)
-  local safe_callback = vim.schedule_wrap(callback)
-  local output = ""
-  local callback_invoked = false
+  local stdout = assert(uv.new_pipe())
+  local output = {}
+  local timer = nil
+  local handle = nil
 
-  -- Add timeout protection (500ms)
-  local timeout_timer = uv.new_timer()
-
-  local function invoke_callback_once(is_ascii)
-    if not callback_invoked then
-      callback_invoked = true
-      if timeout_timer then
-        timeout_timer:stop()
-        timeout_timer:close()
+  local function on_exit()
+    close(timer)
+    close(handle)
+    local check = assert(uv.new_check())
+    check:start(function()
+      if stdout and not stdout:is_closing() then
+        return
       end
-      safe_callback(is_ascii)
-    end
+      check:stop()
+      close(check)
+      close(stdout)
+      local result = table.concat(output)
+      local is_ascii = result:find("true") ~= nil
+      vim.schedule_wrap(callback)(is_ascii)
+    end)
   end
 
-  -- The options table requires explicit fields to satisfy LSP [missing-fields]
-  local options = {
+  -- separate opts as a single variable to disalbe lsp warning
+  local opts = {
     args = { "--user", "call", "org.fcitx.Fcitx5", "/rime", "org.fcitx.Fcitx.Rime1", "IsAsciiMode" },
     stdio = { nil, stdout, nil },
-    detached = false,
     hide = true,
   }
-
-  local handle, pid_or_err
-  local spawn_handle -- Capture handle for closure
-  handle, pid_or_err = uv.spawn("busctl", options, function(_, _)
-    if spawn_handle and not spawn_handle:is_closing() then
-      spawn_handle:close()
-    end
-    -- If process exits without data, assume ASCII mode
-    if not callback_invoked then
-      invoke_callback_once(true)
-    end
+  handle = uv.spawn("busctl", opts, function(_, _)
+    on_exit()
   end)
-  spawn_handle = handle
 
-  -- Error handling for process spawning
   if not handle then
-    vim.schedule(function()
-      vim.notify("Rime-DBus: Failed to spawn busctl: " .. tostring(pid_or_err), vim.log.levels.ERROR)
-    end)
-    if stdout and not stdout:is_closing() then
-      stdout:close()
-    end
+    close(stdout)
+    vim.notify("Rime-DBus: busctl spawn failed", vim.log.levels.WARN)
     return
   end
 
-  -- Set timeout
-  if timeout_timer then
-    timeout_timer:start(500, 0, function()
-      if stdout and not stdout:is_closing() then
-        stdout:read_stop()
-        stdout:close()
-      end
-      if spawn_handle and not spawn_handle:is_closing() then
-        spawn_handle:kill(15)    -- SIGTERM
-      end
-      invoke_callback_once(true) -- Fallback to ASCII mode on timeout
-    end)
-  end
+  -- Timeout protection (500ms)
+  timer = assert(uv.new_timer())
+  timer:start(500, 0, function()
+    if handle and not handle:is_closing() then
+      handle:kill("sigterm")
+    end
+  end)
 
-  if stdout then
-    stdout:read_start(function(err, data)
-      if err then
-        if not stdout:is_closing() then
-          stdout:read_stop()
-          stdout:close()
-        end
-        return
-      end
-
-      if data then
-        output = output .. data
-      else
-        -- EOF reached
-        if not stdout:is_closing() then
-          stdout:read_stop()
-          stdout:close()
-        end
-        local is_ascii = output:find("true") ~= nil
-        invoke_callback_once(is_ascii)
-      end
-    end)
-  end
+  stdout:read_start(function(err, data)
+    assert(not err, err)
+    if data then
+      table.insert(output, data)
+    else
+      close(stdout)
+    end
+  end)
 end
 
 --- Set Rime ASCII state asynchronously
 --- @param target_state boolean
 local function set_rime_state(target_state)
-  local options = {
+  local opts = {
     args = {
       "--user", "call", "org.fcitx.Fcitx5", "/rime",
       "org.fcitx.Fcitx.Rime1", "SetAsciiMode", "b",
       target_state and "true" or "false"
     },
-    detached = true,
     hide = true,
   }
 
-  local handle, pid_or_err
-  local spawn_handle -- Capture handle for closure
-  handle, pid_or_err = uv.spawn("busctl", options, function(_, _)
-    if spawn_handle and not spawn_handle:is_closing() then
-      spawn_handle:close()
-    end
+  local handle = uv.spawn("busctl", opts, function()
+    close(handle)
   end)
-  spawn_handle = handle
 
-  -- Error handling for spawn failure
   if not handle then
-    vim.schedule(function()
-      vim.notify("Rime-DBus: Failed to set state: " .. tostring(pid_or_err), vim.log.levels.WARN)
-    end)
+    vim.notify("Rime-DBus: Failed to set state", vim.log.levels.WARN)
   end
 end
 
