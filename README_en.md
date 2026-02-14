@@ -1,4 +1,4 @@
-# fcitx5-rime-dbus.nvim
+# rime-dbus.nvim
 
 English | [简体中文](README.md)
 
