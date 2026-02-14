@@ -6,6 +6,6 @@ vim.api.nvim_create_user_command("RimeDbusEnable", function()
   require("rime_dbus").enable()
 end, { desc = "Enable Rime D-Bus auto ASCII mode" })
 
-vim.api.nvim_create_user_command("RimeDbusClose", function()
+vim.api.nvim_create_user_command("RimeDbusDisalbe", function()
   require("rime_dbus").disable()
-end, { desc = "Close Rime D-Bus auto ASCII mode" })
+end, { desc = "Disalbe Rime D-Bus auto ASCII mode" })

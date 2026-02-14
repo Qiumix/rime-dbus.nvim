@@ -24,6 +24,10 @@ M.enable = function()
     return
   end
 
+  if enabled then
+    return -- Already enabled
+  end
+
   enabled = true
 
   local group = api.nvim_create_augroup(augroup_name, { clear = true })
@@ -50,12 +54,16 @@ M.enable = function()
 end
 
 M.disable = function()
-  enabled = false
-  if smart_esc then
-    vim.keymap.del({ "n", "v" }, "<Esc>")
+  if not enabled then
+    return -- Already disabled
   end
 
-  api.nvim_del_augroup_by_name(augroup_name)
+  enabled = false
+  if smart_esc then
+    pcall(vim.keymap.del, { "n", "v" }, "<Esc>")
+  end
+
+  pcall(api.nvim_del_augroup_by_name, augroup_name)
 end
 
 M.toggle = function()
@@ -64,8 +72,12 @@ end
 
 M.setup = function(opts)
   if opts then
-    enabled = opts.enabled and opts.enabled or enabled
-    smart_esc = opts.smart_esc and opts.smart_esc or smart_esc
+    if opts.enabled ~= nil then
+      enabled = opts.enabled
+    end
+    if opts.smart_esc ~= nil then
+      smart_esc = opts.smart_esc
+    end
   end
   if enabled then
     M.enable()
