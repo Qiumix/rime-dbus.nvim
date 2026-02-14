@@ -11,7 +11,7 @@
 
 ## 系统要求
 
-- Linux 系统
+- 支持systemd(比如linux和bsd)
 - 安装了 Rime 输入法的 fcitx5
 - `busctl` 命令（通常来自 systemd 软件包）
 

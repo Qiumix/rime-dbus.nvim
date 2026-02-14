@@ -1,5 +1,5 @@
 -- Only with both linux and dbus
-if vim.fn.has("linux") == 0 or vim.fn.executable("busctl") == 0 then
+if vim.fn.executable("busctl") == 0 then
   return
 end
 

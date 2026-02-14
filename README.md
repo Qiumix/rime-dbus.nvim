@@ -11,7 +11,7 @@ Auto toggle ASCII mode of Rime with fcitx5 in Neovim, through D-Bus.
 
 ## Requirements
 
-- Linux system
+- systemd support(like linux and bsd)
 - fcitx5 with Rime input method
 - `busctl` command (usually from systemd package)
 
