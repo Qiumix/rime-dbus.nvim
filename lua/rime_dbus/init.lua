@@ -8,18 +8,18 @@ local enabled = false
 local smart_esc = true
 local augroup_name = "RimeAutoMode"
 
-M.forcely_set_ascii = core.forcely_set_ascii
-
 local function smart_esc_fun()
-  -- 1. Run your force function first
-  M.forcely_set_ascii()
+  -- Run your force function first
+  core.get_rime_state(function(not_ascii)
+    if not_ascii then core.forcely_set_ascii() end
+  end)
 
-  -- 2. Return the actual Esc key to trigger original behavior
+  -- Return the actual Esc key to trigger original behavior
   -- Use nvim_replace_termcodes to handle the key properly
   return api.nvim_replace_termcodes("<Esc>", true, true, true)
 end
 
-M.open = function()
+M.enable = function()
   if vim.fn.executable("busctl") == 0 then
     vim.notify("Rime-DBus: busctl not found", vim.log.levels.ERROR)
     return
@@ -48,16 +48,15 @@ M.open = function()
   })
 end
 
-M.close = function()
+M.disable = function()
   enabled = false
   api.nvim_del_augroup_by_name(augroup_name)
-  pcall(vim.keymap.del({ "n", "v" }, "<Esc>"))
+  vim.keymap.del({ "n", "v" }, "<Esc>")
 end
 
 M.toggle = function()
   M[enabled and "close" or "open"]()
 end
-
 
 M.setup = function(opts)
   if opts then
@@ -65,7 +64,7 @@ M.setup = function(opts)
     smart_esc = opts.smart_esc and opts.smart_esc or smart_esc
   end
   if enabled then
-    M.open()
+    M.enable()
   end
 end
 
