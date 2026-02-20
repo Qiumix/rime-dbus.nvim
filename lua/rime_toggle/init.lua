@@ -6,6 +6,7 @@ local core = require("rime_toggle.core")
 -- Plugin enabled state
 local enabled = true
 local smart_esc = true
+local setuped = false
 local augroup_name = "RimeAutoMode"
 
 local function smart_esc_fun()
@@ -20,11 +21,13 @@ end
 
 M.enable = function()
   if vim.fn.executable("busctl") == 0 then
-    vim.notify("Rime-Toggle: busctl not found", vim.log.levels.ERROR)
+    vim.notify("Rime-Toggle: busctl not found", vim.log.levels.WARN)
     return
   end
 
-  if enabled then
+  if enabled and not setuped then
+    setuped = true
+  elseif enabled then
     return -- Already enabled
   end
 
